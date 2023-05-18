@@ -4,8 +4,6 @@
       <header class="modal-header">
         <slot name="header">
         {{ this.mode=='add'? 'Добавление задания!' : 'Редактирование задания!' }}
-            
-
           <button
             type="button"
             class="btn-close"
@@ -23,7 +21,8 @@
           <!-- <div class="enterTask"> -->
             <textarea name="" id="" cols="40" rows="3" 
                       v-model='this.exercise'  
-                      class="body-textarea">
+                      class="body-textarea"
+                      @input='updateHistory'>
             </textarea>
           <!-- </div> -->
         </div>
@@ -42,8 +41,8 @@
                 </button>
             </div>
         </div>
-        <div class="body-table">
-            <table>
+        <div class="body-table" >
+            <table v-show="tasks.length!=0">
                 <tr>
                     <th>
                         Статус
@@ -59,28 +58,42 @@
                   
                 <td>
                   <input type="checkbox" 
-                        @change="changeCheckbox(index)" 
-                        :checked="checked[index]" >
+                        @change="changeCheckbox(index), updateHistory()" 
+                        :checked="checked[index] " >
                 </td>
                 <td>
                     <input type="text"  
-                          @input="changeTask($event, index)" 
-                          :value="task">
+                          @input="changeTask($event, index), updateHistory(), task = $event.target.value" 
+                          :value="task"
+                         >
                   
                 </td>
                 </tr>
             </table>
-            {{ this.items }}
+            <!-- {{ this.items }} -->
+            {{ this.tasks }}
+            {{ this.exercise }}
         </div>
         </slot>
        </section>
        <footer class="modal-footer">
           <slot name="footer">
-            <button class="btn">Вперед</button>
+            <app-do></app-do>
             <button class="btn"
-                    @click="undoChange()">Назад</button>
+                    :class="{ 'btn-disabled' : redoDisabled }"
+                    :disabled="redoDisabled"
+                    @click="redo">
+                    Вперед
+            </button>
             <button class="btn"
-                     @click="changeSave(), close()">
+                    :class="{ 'btn-disabled' : undoDisabled }"
+                    @click="undo"
+                    :disabled="undoDisabled">
+                    Назад
+            </button>
+            <button class="btn"
+                     @click="changeSave(), close()"
+                     >
                      Сохранить
             </button>
 
@@ -88,7 +101,7 @@
               type="button"
               class="btn-green btn"
               :modal="modal"
-              @click="close()">
+              @click=" confirmClose()">
               Закрыть
           </button>
         </slot>
@@ -96,13 +109,18 @@
     </div>
   </div>
 
+
 </template>
 
 <script>
 import { mapActions, mapGetters } from 'vuex';
+import AppDo from './UndoRedo.vue';
 import store from '@/store';
   export default {
     name: 'AppModal',
+    components:{
+      AppDo,
+    },
    props:{
     // chosenElem:Number,
    },
@@ -112,6 +130,13 @@ import store from '@/store';
       tasks:[],
       checked:[],
       chosenIndex:'',
+      history:[{
+        exercise:'',
+        tasks:[],
+        checked:[]
+      }
+    ], 
+      historyIndex:0,
     }
    },
   //  updated() {    
@@ -133,20 +158,14 @@ import store from '@/store';
       // },
       addTask(){
         this.tasks.push('');
+        this.updateHistory();
       },
       changeTask(e, index){
         this.tasks[index]=e.target.value
         // this.checked[index]=false
       },
       changeCheckbox(index){
-        this.checked[index]=!this.checked[index]
-        // if (this.checked[index]==true){
-        //   this.checked[index]=false
-        // }
-        // else{
-        //   this.checked[index]=true
-        // }
-        
+        this.checked[index]=!this.checked[index]  
       }, 
       chooseElem(index){
         this.chosenIndex=index
@@ -156,7 +175,6 @@ import store from '@/store';
         this.tasks.splice(this.chosenIndex,1)
       }, 
       changeSave(){
-        // console.log('check ex', this.exercise!='')
         if(this.exercise!=''){
         store.dispatch('saveChange', [{
           exercise:this.exercise,
@@ -166,34 +184,109 @@ import store from '@/store';
       ]);
         }
       },
-      close(){
-        store.dispatch('changeModal');
-        this.clearFields()
+      confirmClose(){
+        if (this.mode=='edit'){
+          if (confirm("Вы точно хотите отменить редактирование?"))
+  {
+    this.close()
+  }
+
+}
+else{
+  this.close()
+}
       },
+      close(){
+    store.dispatch('changeModal');
+        this.clearFields()
+    },
       clearFields(){
       this.exercise='';
       this.tasks=[];
       this.checked=[];
       this.chosenIndex='';
       },
-      undoChange(){
-//         const inp = document.querySelector('input');
-// inp.addEventListener('click', e => {
-  document.dispatchEvent(
-    new KeyboardEvent('keydown', {
-      // keyCode: 13,
-      ctrlKey: true,
-      KeyZ:true
-    })
-  );
-// });
+      updateHistory() {
+        console.log('updhist', this.history);
+        console.log('task', this.tasks)
+        // if (this.historyIndex==0 && this.tasks.length==0){
+        //   this.addTask()
+        // }
+        if (this.historyIndex==0){
+          // if (this.history[0].exercise==''){
 
-document.addEventListener('keydown', e => {
-  if (e.ctrlKey && e.KeyZ) {
-    console.log('Hi there');
-  }
-});
-      }
+          // }
+         
+          this.history.push({
+            exercise:this.exercise,
+          tasks:this.tasks,
+          checked:this.checked
+          })
+
+          this.historyIndex++;
+        }
+        
+        this.history=JSON.parse(JSON.stringify(this.history.slice(0, this.historyIndex)))
+        // this.history = this.history.slice(0, this.historyIndex)
+        // this.history[this.historyIndex].tasks[0]='';
+        this.history.push({
+          exercise:this.exercise,
+          tasks:this.tasks,
+          checked:this.checked
+          
+        });
+        this.historyIndex++;
+        
+  
+      },
+      undo() {
+        console.log('curind', this.historyIndex)
+        if (this.historyIndex==this.history.length){
+            this.historyIndex--;
+          }
+        if (this.historyIndex > 0) {
+          this.historyIndex--;
+        
+          this.exercise = this.history[this.historyIndex].exercise;
+          for (let i=0; i<this.history[this.historyIndex].tasks.length; i++){
+            // Vue.$set(this.tasks,i,this.history[this.historyIndex].tasks[i])
+             this.tasks[i]=this.history[this.historyIndex].tasks[i];
+             this.checked[i] = this.history[this.historyIndex].checked[i];
+            // this.tasks[i].set(this.history[this.historyIndex].tasks[i])
+          }
+          // this.tasks = this.history[this.historyIndex].tasks;
+          this.checked = this.history[this.historyIndex].checked;
+          console.log('ind', this.historyIndex)
+          console.log('history', this.history)
+
+        }
+      },
+      redo() {
+        if (this.historyIndex < this.history.length) {
+          this.exercise = this.history[this.historyIndex].exercise;
+          this.tasks = this.history[this.historyIndex].tasks;
+          this.checked = this.history[this.historyIndex].checked;
+          this.historyIndex++;
+        }
+      },
+//       undoChange(){
+// //         const inp = document.querySelector('input');
+// // inp.addEventListener('click', e => {
+//   document.dispatchEvent(
+//     new KeyboardEvent('keydown', {
+//       // keyCode: 13,
+//       ctrlKey: true,
+//       KeyZ:true
+//     })
+//   );
+// // });
+
+// document.addEventListener('keydown', e => {
+//   if (e.ctrlKey && e.KeyZ) {
+//     console.log('Hi there');
+//   }
+// });
+//       }
     },
 
     computed:{
@@ -203,6 +296,12 @@ document.addEventListener('keydown', e => {
         mode:'mode', 
         chosenElem:'chosenElem'
       }),
+      undoDisabled() {
+        return this.historyIndex === 0;
+      },
+      redoDisabled() {
+        return this.historyIndex === this.history.length;
+      }
     },
 watch:{
   modal: function (){
@@ -296,6 +395,9 @@ watch:{
     /* display: flex;
     justify-content: space-around; */
     /* border: 1px solid #4AAE9B; */
+  }
+  .btn-disabled{
+    background-color:rgba(134, 102, 166,0.5);
   }
   .btn-first{
     margin-left: 40px;

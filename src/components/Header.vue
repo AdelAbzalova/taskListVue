@@ -15,6 +15,7 @@
 </template>
 
 <script>
+
 import store from '@/store';
 import { mapActions, mapGetters, mapMutations } from 'vuex';
 

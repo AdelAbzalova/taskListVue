@@ -26,6 +26,7 @@
 </div>
 {{ this.items.length }}
 {{ this.items }}
+{{ this.chosenElem }}
 <!-- <div @click= changeChosenElem(-1)></div> -->
 </template>
 
@@ -59,22 +60,35 @@ export default {
         // // this.chosenElem=index
         this.$store.dispatch('changeChosenElem', index)
       },
-      removeListener(e){
-        if(e.target.tagName!='TD' && e.target.tagName!='LI' && e.target.tagName!='INPUT'){
-        this.changeChosenElem(-1)     
-        document.removeEventListener('click', this.removeListener)   
-}
+//       removeListener(e){
+//         if(e.target.tagName!='TD' && e.target.tagName!='LI' && e.target.tagName!='INPUT'){
+//         this.changeChosenElem(-1)     
+//         document.removeEventListener('click', this.removeListener)   
+// }
 
-},
-      putListener(){
-        document.addEventListener('click', this.removeListener)
-      },
+// },
+//       putListener(){
+//         document.addEventListener('click', this.removeListener)
+//       },
+putListener(){
+  document.addEventListener('click', e => {
+    if(e.target.tagName!='TD' && e.target.tagName!='LI' && e.target.tagName!='INPUT' && this.modal==false){
+        this.changeChosenElem(-1)     
+        console.log(this.chosenElem)
+  }})
+      
+        // document.removeEventListener('click', this.removeListener)  
+        // ------------------------------------------- 
+// !!!! тут косяки !!!
+
+}
 
   },
   computed:{
     ...mapGetters( {
       items:'items',
-      chosenElem:'chosenElem' 
+      chosenElem:'chosenElem' ,
+      modal:'modal'
       // chosenElem:'chosenElem'
     }), 
   }, 

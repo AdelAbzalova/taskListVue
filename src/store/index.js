@@ -49,7 +49,8 @@ export default createStore({
 				}
 				else if (state.mode=='edit'){
 					state.items[chosenElem]=exer
-					// console.log('changeState')
+					console.log('exer',exer);
+					console.log(state.items)
 				}
 				
 			
