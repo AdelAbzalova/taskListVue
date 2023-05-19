@@ -1,76 +1,38 @@
 <template>
-  <!-- <nav>
-    <router-link to="/">Home</router-link> |
-    <router-link to="/about">About</router-link>
-  </nav>
-  <router-view/> -->
-  <app-header 
-  
-  ></app-header>
-  <app-main 
-
-
-  >
-</app-main> 
-<app-modal 
-            v-show="modal" 
-
-
-
->  
-            
-</app-modal>
-
-<!-- {{ this.exercise }}
-{{ this.tasks }}
-{{ this.checked }} -->
-
-<!-- :exercise="exersice" 
-            :tasks="tasks" 
-            :checked="checked" -->
+  <app-header></app-header>
+  <app-main> </app-main>
+  <app-modal v-show="modal"> </app-modal>
 </template>
 
 <script>
-import { mapGetters } from 'vuex';
-import AppHeader from './components/Header.vue';
-import AppMain from './components/Main.vue';
-import AppModal from './components/Modal.vue'
-export default{
-  components:{
+import { mapGetters, mapActions } from "vuex";
+import AppHeader from "./components/Header.vue";
+import AppMain from "./components/Main.vue";
+import AppModal from "./components/Modal.vue";
+export default {
+  components: {
     AppHeader,
     AppMain,
     AppModal,
   },
-  data(){
-    return{
-      // chosenElem:-1,
-      // mode:'',
-      // exercise:'',
-      // tasks:[],
-      // checked:[],
-    }
+  mounted() {
+    this.checkLocalStore();
   },
-  methods:{
-    onModalChange(mod){
-      this.modal=mod
-      console.log(mod)
+  methods: {
+    ...mapActions({
+      checkLocalStore: "checkLocalStore",
+    }),
+    onModalChange(mod) {
+      this.modal = mod;
     },
-    changeProps(mode){
-      if (typeof this.chosenElem!=String && mode=='edit'){
-        // this.exercise=this.items[this.chosenElem].exercise
-        // this.tasks.push(this.items[this.chosenElem].tasks)
-        // this.checked.push(this.items[this.chosenElem].checked)
-      }
-    }
   },
-  computed:{
+  computed: {
     ...mapGetters({
-      items:'items',
-      modal:'modal'
-    })
-  }
-
-}
+      items: "items",
+      modal: "modal",
+    }),
+  },
+};
 </script>
 
 <style>
