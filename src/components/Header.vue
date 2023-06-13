@@ -1,10 +1,10 @@
 <template>
-  <h1>Список заданий</h1>
+  <h1 class="header-title">Список заданий</h1>
   <div class="container">
-    <button class="btn" :modal="modal" @click="changeMode('add'), showModal()">
+    <button class="btn" @click="changeMode('add'), showModal()">
       Добавить задачу
     </button>
-    <button class="btn" :modal="modal" @click="changeMode('edit'), showModal()">
+    <button class="btn" @click="changeMode('edit'), showModal()">
       Редактировать
     </button>
     <button class="btn" @click="deleteItem()">Удалить</button>
@@ -12,37 +12,38 @@
 </template>
 
 <script>
-import store from "@/store";
-import { mapActions, mapGetters, mapMutations } from "vuex";
+import { mapActions, mapMutations, mapState } from "vuex";
 
 export default {
   name: "AppHeader",
   methods: {
-    ...mapMutations(["changeModal"]),
+    ...mapMutations(["toggleModal"]),
     ...mapActions({
-      changwModal: "changeModal",
+      toggleModal: "toggleModal",
       changeMode: "changeMode",
       deleteElem: "deleteElem",
       checkLocalStore: "checkLocalStore",
     }),
     deleteItem() {
-      if (this.chosenElem != -1) {
+      if (this.chosenElem != null) {
         if (confirm("Вы точно хотите удалить это задание?")) {
           this.deleteElem();
         }
+      } else {
+        alert("Выберите задание для удаления!!!");
       }
     },
     showModal() {
-      if (!(this.mode == "edit" && this.chosenElem == -1)) {
-        store.dispatch("changeModal");
+      if (!(this.mode === "edit" && this.chosenElem === null)) {
+        this.toggleModal();
       } else {
         alert("Сначала выберите задание для редактирования!");
       }
     },
   },
   computed: {
-    ...mapGetters({
-      modal: "modal",
+    ...mapState({
+      isModalOpen: "isModalOpen",
       mode: "mode",
       chosenElem: "chosenElem",
     }),
@@ -53,7 +54,7 @@ export default {
 <style scoped>
 .btn {
   font-size: 20px;
-  background-color: rgb(156, 68, 156);
+  background-color: var(--btns-bg-color);
   color: white;
   border-radius: 10px;
   box-shadow: 5px 5px 3px 1px black;
@@ -61,7 +62,11 @@ export default {
   margin: 15px;
   height: 35px;
 }
-h1 {
-  color: rgb(156, 68, 156);
+.header-title {
+  color: var(--btns-bg-color);
+  text-align: center;
+}
+.container {
+  text-align: center;
 }
 </style>

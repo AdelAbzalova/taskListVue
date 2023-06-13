@@ -1,26 +1,33 @@
-<template>
-  <div class="container" @click="putListener()">
-    <table v-show="this.items.length != 0">
-      <tr>
+<template @click="putListener()">
+  <div class="container">
+    <table class="container-table" v-show="this.items.length != 0">
+      <tr class="container-tr">
         <th>Задание</th>
         <th>Задачи</th>
       </tr>
 
       <tr
+        class="container-tr"
         v-for="(item, index) in items"
-        :key="index"
+        :key="'exercise' + index"
         @click="changeChosenElem(index)"
-        v-bind:class="chosenElem == index ? 'selected' : ''"
+        :class="chosenElem == index ? 'selected' : ''"
       >
-        <td class="container-exercise">{{ item.exercise }}</td>
-        <td class="container-task">
+        <td class="container-td , container-exercise">{{ item.exercise }}</td>
+        <td class="container-td ,container-task">
           <ul>
-            <li v-for="(task, ind) in item.tasks" :key="ind">
+            <li
+              v-for="(task, ind) in item.tasks"
+              class="container-li"
+              :key="'task' + index + ind"
+            >
               <input
                 type="checkbox"
                 :id="index + String(ind)"
                 :checked="item.checked[ind]"
-                @change="changeCheckbox(index, ind)"
+                @change="
+                  changeCheckbox([index, ind, !this.items[index].checked[ind]])
+                "
               />
               <label :for="index + String(ind)">{{ task }}</label>
             </li>
@@ -32,38 +39,35 @@
 </template>
 
 <script>
-import { mapActions, mapGetters } from "vuex";
+import { mapActions, mapState } from "vuex";
+
 export default {
   name: "AppMain",
-  methods: {
-    ...mapActions(["changeCheckbox", "changeChosenElem"]),
-
-    changeCheckbox(index, ind) {
-      let isChecked;
-      isChecked = !this.items[index].checked[ind];
-      this.$store.dispatch("changeCheckbox", [index, ind, isChecked]);
-    },
-    changeChosenElem(index) {
-      this.$store.dispatch("changeChosenElem", index);
-    },
-    putListener() {
-      document.addEventListener("click", (e) => {
-        if (
-          e.target.tagName != "TD" &&
-          e.target.tagName != "LI" &&
-          e.target.tagName != "INPUT" &&
-          this.modal == false
-        ) {
-          this.changeChosenElem(-1);
-        }
-      });
-    },
+  mounted() {
+    document.addEventListener("click", (e) => {
+      if (
+        e.target.tagName != "TD" &&
+        e.target.tagName != "LI" &&
+        e.target.tagName != "INPUT" &&
+        this.isModalOpen == false
+      ) {
+        this.changeChosenElem(null);
+      }
+    });
   },
+
+  methods: {
+    ...mapActions({
+      changeCheckbox: "changeCheckbox",
+      changeChosenElem: "changeChosenElem",
+    }),
+  },
+
   computed: {
-    ...mapGetters({
+    ...mapState({
       items: "items",
       chosenElem: "chosenElem",
-      modal: "modal",
+      isModalOpen: "isModalOpen",
     }),
   },
 };
@@ -74,28 +78,26 @@ export default {
   display: flex;
   justify-content: space-around;
 }
-table {
+.container-table {
   font-size: 20px;
 }
-tr {
-  background-color: rgb(249, 221, 249);
+.container-tr {
+  background-color: var(--main-bg-color);
 }
-th {
-  background-color: rgb(233, 179, 233);
-}
-td {
+.container-td {
   width: 600px;
   border-collapse: collapse;
 }
 .container-exercise {
+  text-align: center;
 }
 .container-task {
   text-align: start;
 }
-li {
+.container-li {
   list-style: none;
 }
 .selected {
-  background-color: rgba(177, 72, 207, 0.5);
+  background-color: var(--selected-bg-color);
 }
 </style>

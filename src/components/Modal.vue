@@ -11,7 +11,7 @@
           <button
             type="button"
             class="btn-close"
-            :modal="modal"
+            :isModalOpen="isModalOpen"
             @click="confirmClose()"
           >
             x
@@ -19,64 +19,57 @@
         </slot>
       </header>
       <section class="modal-body">
-        <slot name="body">
-          <div class="body-exercise">
-            <div class="body-header">Задание:</div>
-            <textarea
-              name=""
-              cols="40"
-              rows="3"
-              v-model="this.exercise"
-              class="body-textarea"
-              @input="updateHistory"
-            >
-            </textarea>
+        <div class="body-exercise">
+          <div class="body-header">Задание:</div>
+          <textarea
+            name=""
+            cols="40"
+            rows="3"
+            v-model="this.exercise"
+            class="body-textarea"
+            @input="updateHistory"
+          >
+          </textarea>
+        </div>
+        <div class="body-list">
+          <div>Список задач:</div>
+          <div>
+            <button class="btn btn-first" @click="addTask()">Добавить</button>
+            <button class="btn" @click="deleteTask()">Удалить</button>
           </div>
-          <div class="body-list">
-            <div>Список задач:</div>
-            <div>
-              <button class="btn btn-first" @click="addTask()">Добавить</button>
-              <button class="btn" @click="deleteTask()">Удалить</button>
-            </div>
-          </div>
-          <div class="body-table">
-            <table v-show="tasks.length != 0">
-              <tr>
-                <th>Статус</th>
-                <th>Название</th>
-              </tr>
+        </div>
+        <div class="body-table">
+          <table v-show="tasks.length != 0">
+            <tr>
+              <th>Статус</th>
+              <th>Название</th>
+            </tr>
 
-              <tr
-                v-for="(task, index) in tasks"
-                :key="index"
-                @click="chooseElem(index)"
-              >
-                <td>
-                  <input
-                    type="checkbox"
-                    @change="changeCheckbox(index), updateHistory()"
-                    :checked="checked[index]"
-                  />
-                </td>
-                <td>
-                  <input
-                    type="text"
-                    @input="
-                      changeTask($event, index),
-                        updateHistory(),
-                        (task = $event.target.value)
-                    "
-                    :value="task"
-                  />
-                </td>
-              </tr>
-            </table>
-          </div>
-        </slot>
+            <tr
+              v-for="(task, index) in tasks"
+              :key="'task' + index"
+              @click="chooseElem(index)"
+            >
+              <td>
+                <input
+                  type="checkbox"
+                  @change="changeCheckbox(index), updateHistory()"
+                  :checked="checked[index]"
+                />
+              </td>
+              <td>
+                <input
+                  type="text"
+                  @input="changeInput($event, index)"
+                  :value="task"
+                />
+              </td>
+            </tr>
+          </table>
+        </div>
       </section>
       <footer class="modal-footer">
         <slot name="footer">
-          <!-- <app-do></app-do> -->
           <button
             class="btn"
             :class="{ 'btn-disabled': redoDisabled }"
@@ -93,12 +86,12 @@
           >
             Назад
           </button>
-          <button class="btn" @click="changeSave(), close()">Сохранить</button>
+          <button class="btn" @click="changeSave()">Сохранить</button>
 
           <button
             type="button"
             class="btn-green btn"
-            :modal="modal"
+            :modal="isModalOpen"
             @click="confirmClose()"
           >
             Закрыть
@@ -110,14 +103,11 @@
 </template>
 
 <script>
-import { mapActions, mapGetters } from "vuex";
-// import AppDo from "./UndoRedo.vue";
+import { mapActions, mapState } from "vuex";
 import store from "@/store";
+
 export default {
   name: "AppModal",
-  // components: {
-  //   AppDo,
-  // },
   data() {
     return {
       exercise: "",
@@ -137,7 +127,7 @@ export default {
   methods: {
     ...mapActions({
       saveChange: "saveChange",
-      changeModal: "changeModal",
+      toggleModal: "toggleModal",
     }),
     addTask() {
       this.tasks.push("");
@@ -165,21 +155,38 @@ export default {
         };
 
         store.dispatch("saveChange", [new_items, this.chosenElem]);
+        this.close();
+      } else {
+        alert("Пожалуйста, введите название задания!");
       }
+    },
+    changeInput($event, index) {
+      this.changeTask($event, index),
+        this.updateHistory(),
+        (this.task = $event.target.value);
     },
     confirmClose() {
       if (this.mode == "edit") {
         if (confirm("Вы точно хотите отменить редактирование?")) {
-          console.log("task in del", this.tasks);
           this.close();
         }
-      } else {
-        this.close();
+      } else if (this.mode == "add") {
+        if (confirm("Вы точно хотите отменить добавление?")) {
+          this.close();
+        }
       }
     },
     close() {
-      store.dispatch("changeModal");
+      this.toggleModal();
       this.clearFields();
+      this.history = [
+        {
+          exercise: "",
+          tasks: [],
+          checked: [],
+        },
+      ];
+      this.historyIndex = 0;
     },
     clearFields() {
       this.exercise = "";
@@ -197,7 +204,6 @@ export default {
 
         this.historyIndex++;
       }
-
       this.history = JSON.parse(
         JSON.stringify(this.history.slice(0, this.historyIndex))
       );
@@ -209,13 +215,11 @@ export default {
       this.historyIndex++;
     },
     undo() {
-      console.log("curind", this.historyIndex);
       if (this.historyIndex == this.history.length) {
         this.historyIndex--;
       }
       if (this.historyIndex > 0) {
         this.historyIndex--;
-
         this.exercise = this.history[this.historyIndex].exercise;
         for (let i = 0; i < this.history[this.historyIndex].tasks.length; i++) {
           this.tasks[i] = this.history[this.historyIndex].tasks[i];
@@ -235,9 +239,9 @@ export default {
   },
 
   computed: {
-    ...mapGetters({
+    ...mapState({
       items: "items",
-      modal: "modal",
+      isModalOpen: "isModalOpen",
       mode: "mode",
       chosenElem: "chosenElem",
     }),
@@ -245,18 +249,27 @@ export default {
       return this.historyIndex === 0;
     },
     redoDisabled() {
-      console.log('length',this.history.length)
-      console.log('redodis',this.historyIndex === this.history.length)
       return this.historyIndex === this.history.length;
     },
   },
   watch: {
-    modal: function () {
-      if (this.chosenElem != -1 && this.mode == "edit" && this.modal == true) {
+    isModalOpen: function () {
+      if (
+        this.chosenElem != -1 &&
+        this.mode == "edit" &&
+        this.isModalOpen == true
+      ) {
         let ex = JSON.parse(JSON.stringify(this.items[this.chosenElem]));
         this.exercise = ex.exercise;
         this.tasks = ex.tasks;
         this.checked = ex.checked;
+        this.history = [
+          {
+            exercise: ex.exercise,
+            tasks: ex.tasks,
+            checked: ex.checked,
+          },
+        ];
       } else {
         this.clearFields();
       }
@@ -295,8 +308,7 @@ export default {
 
 .modal-header {
   border-bottom: 1px solid #eeeeee;
-  /* color: #4AAE9B; */
-  color: rgb(134, 102, 166);
+  color: var(--modal-bg-color);
   justify-content: space-between;
 }
 
@@ -316,23 +328,23 @@ export default {
   padding: 0px;
   cursor: pointer;
   font-weight: bold;
-  color: rgb(134, 102, 166);
-  /* color:rgba(113, 82, 154, 0); */
+  color: var(--modal-bg-color);
   background: transparent;
 }
 
 .btn {
-  color: rgb(236, 236, 236);
-  background-color: rgb(134, 102, 166);
+  color: var(--modal-text-color);
+  background-color: var(--modal-bg-color);
   height: 30px;
   width: 100px;
   border-radius: 4px;
   margin-left: 10px;
   font-size: 15px;
-  border: 1px solid rgb(134, 102, 166);
+  border: 1px solid var(--modal-bg-color);
 }
 .btn-disabled {
-  background-color: rgba(134, 102, 166, 0.5);
+  background-color: var(--modal-bg-color);
+  opacity: 0.5;
 }
 .btn-first {
   margin-left: 40px;
