@@ -1,4 +1,4 @@
-<template @click="putListener()">
+<template >
   <div class="container">
     <table class="container-table" v-show="this.items.length != 0">
       <tr class="container-tr">
