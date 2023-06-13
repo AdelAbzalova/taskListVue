@@ -2,91 +2,75 @@ import { createStore } from "vuex";
 export default createStore({
   state: {
     items: [],
-    modal: false,
+    isModalOpen: false,
     mode: "",
-    chosenElem: -1,
+    chosenElem: null,
   },
   getters: {
-    items(state) {
-      return state.items;
-    },
-    modal(state) {
-      return state.modal;
-    },
-    mode(state) {
-      return state.mode;
-    },
-    chosenElem(state) {
-      return state.chosenElem;
-    },
   },
   mutations: {
-    saveChange(state, [exer, chosenElem]) {
+    SAVE_CHANGE(state, payload) {
       if (state.mode == "add") {
-        state.items.push(exer);
+        state.items.push(payload.exercise);
       } else if (state.mode == "edit") {
-        state.items[chosenElem] = exer;
-        console.log("exer", exer);
-        console.log(state.items);
+        state.items[payload.chosenElem] = payload.exercise;
       }
-      this.commit("saveLocalStore");
+      this.commit("SAVE_LOCAL_STORE");
     },
-    changeCheckbox(state, [indOfEx, indOfTask, isChecked]) {
-      state.items[indOfEx].checked[indOfTask] = isChecked;
+    CHANGE_CHECKBOX(state, payload) {
+      state.items[payload.indOfEx].checked[payload.indOfTask] = payload.isChecked;
     },
-    changeModal(state, newModal) {
-      state.modal = !newModal;
+    TOGGLE_MODAL(state) {
+      state.isModalOpen = !state.isModalOpen;
     },
-    changeMode(state, mode) {
+    CHANGE_MODE(state, mode) {
       state.mode = mode;
     },
-    changeChosenElem(state, index) {
+    CHANGE_CHOSEN_ELEM(state, index) {
       state.chosenElem = index;
     },
-    deleteElem(state) {
+    DELETE_ELEM(state) {
       state.items.splice(state.chosenElem, 1);
-      this.commit("saveLocalStore");
+      this.commit("SAVE_LOCAL_STORE");
     },
-    checkLocalStore(state) {
+    CHECK_LOCAL_STORE(state) {
       if (localStorage.getItem("items")) {
         try {
           state.items = JSON.parse(localStorage.getItem("items"));
-          console.log("this.items", state.items);
         } catch (e) {
           localStorage.removeItem("items");
         }
       }
     },
-    saveLocalStore(state) {
+    SAVE_LOCAL_STORE(state) {
       const parsed = JSON.stringify(state.items);
       localStorage.setItem("items", parsed);
     },
   },
   actions: {
-    saveChange(store, [exer, chosenElem]) {
-      store.commit("saveChange", [exer, chosenElem]);
+    saveChange(store, [exercise, chosenElem]) {
+      store.commit("SAVE_CHANGE", {exercise:exercise, chosenElem:chosenElem});
     },
     changeCheckbox(store, [indOfEx, indOfTask, isChecked]) {
-      store.commit("changeCheckbox", [indOfEx, indOfTask, isChecked]);
+      store.commit("CHANGE_CHECKBOX", {indOfEx:indOfEx, indOfTask:indOfTask, isChecked:isChecked});
     },
-    changeModal(store) {
-      console.log(this.state.modal);
-      store.commit("changeModal", this.state.modal);
+    toggleModal(store) {
+      store.commit("TOGGLE_MODAL");
     },
     changeMode(store, mode) {
-      store.commit("changeMode", mode);
+      store.commit("CHANGE_MODE", mode);
     },
     changeChosenElem(store, index) {
-      store.commit("changeChosenElem", index);
+      store.commit("CHANGE_CHOSEN_ELEM", index);
     },
     deleteElem(store) {
-      store.commit("deleteElem");
+      store.commit("DELETE_ELEM");
     },
     checkLocalStore(store) {
-      store.commit("checkLocalStore");
+      store.commit("CHECK_LOCAL_STORE");
     },
     saveLocalStore(store) {
-      store.commit("saveLocalStore");
+      store.commit("SAVE_LOCAL_STORE");
     },
   },
 });
